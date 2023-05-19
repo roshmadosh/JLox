@@ -37,17 +37,63 @@ class Scanner {
             case '+' -> addToken(PLUS);
             case '-' -> addToken(MINUS);
             case '*' -> addToken(STAR);
-            case '/' -> addToken(SLASH);
             case ',' -> addToken(COMMA);
             case '.' -> addToken(DOT);
+
+            case '/' -> {
+                // for single-line comments, no token added
+                if (match('/')) {
+                    // BEFORE the newline char
+                    while (peek() != '\n' && !isAtEnd()) advance();
+                } else {
+                    // for division
+                    addToken(SLASH);
+                }
+            }
+
+            // empty space
+            case ' ', '\r', '\t' -> { /* do nothing */ };
+
+            // newline
+            case '\n' -> line++;
+
+            // strings
+            case '"' -> string();
 
             // operators
             case '!' -> addToken(match('=') ? BANG_EQUAL: BANG);
             case '>' -> addToken(match('=') ? GREATER_EQUAL: GREATER);
             case '<' -> addToken(match('=') ? LESS_EQUAL: LESS);
             case '=' -> addToken(match('=') ? EQUAL_EQUAL: EQUAL);
-            default -> Lox.error(line, "Unexpected character '" + c + "'");
+            default -> {
+                if (isDigit(c)) {
+                    number();
+                } else {
+                    Lox.error(line, "Unexpected character '" + c + "'");
+                }
+            }
         }
+    }
+
+    private void number() {
+        while (isDigit(peek())) advance();
+
+        if (peek() == '.' && isDigit(peekNext())) {
+            // consume '.'
+            advance();
+            while (isDigit(peek())) advance();
+        }
+
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
+    }
+
+    private char peekNext() {
+        if (current + 1 >= source.length()) return '\0';
+        return source.charAt(current + 1);
+    }
+
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
     }
 
     // For characters whose meaning may depend on the following character
@@ -66,6 +112,10 @@ class Scanner {
         tokens.add(new Token(type, source.substring(start, current), literal, line));
     }
 
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
+    }
 
 
     private char advance() {
@@ -74,6 +124,24 @@ class Scanner {
 
     private boolean isAtEnd() {
         return current > source.length();
+    }
+
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n') line++;
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string.");
+            return;
+        }
+
+        // consume closing double-quote
+        advance();
+
+        String comment = source.substring(start + 1,  current -1);
+        addToken(STRING, comment);
     }
 
 }
