@@ -3,6 +3,8 @@ package com.hiroshisprojects.lox;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hiroshisprojects.lox.TokenType.*;
+
 class Scanner {
     private final String source;
     private final List<Token> tokens;
@@ -26,19 +28,35 @@ class Scanner {
     private void scanToken() {
         char c = advance();
         switch (c) {
-            case '{' -> addToken(TokenType.LEFT_BRACE);
-            case '}' -> addToken(TokenType.RIGHT_BRACE);
-            case ';' -> addToken(TokenType.SEMICOLON);
-            case '(' -> addToken(TokenType.LEFT_PAREN);
-            case ')' -> addToken(TokenType.RIGHT_PAREN);
-            case '+' -> addToken(TokenType.PLUS);
-            case '-' -> addToken(TokenType.MINUS);
-            case '*' -> addToken(TokenType.STAR);
-            case '/' -> addToken(TokenType.SLASH);
-            case ',' -> addToken(TokenType.COMMA);
-            case '.' -> addToken(TokenType.DOT);
+            // single lexemes
+            case '{' -> addToken(LEFT_BRACE);
+            case '}' -> addToken(RIGHT_BRACE);
+            case ';' -> addToken(SEMICOLON);
+            case '(' -> addToken(LEFT_PAREN);
+            case ')' -> addToken(RIGHT_PAREN);
+            case '+' -> addToken(PLUS);
+            case '-' -> addToken(MINUS);
+            case '*' -> addToken(STAR);
+            case '/' -> addToken(SLASH);
+            case ',' -> addToken(COMMA);
+            case '.' -> addToken(DOT);
+
+            // operators
+            case '!' -> addToken(match('=') ? BANG_EQUAL: BANG);
+            case '>' -> addToken(match('=') ? GREATER_EQUAL: GREATER);
+            case '<' -> addToken(match('=') ? LESS_EQUAL: LESS);
+            case '=' -> addToken(match('=') ? EQUAL_EQUAL: EQUAL);
             default -> Lox.error(line, "Unexpected character '" + c + "'");
         }
+    }
+
+    // For characters whose meaning may depend on the following character
+    private boolean match(char expected) {
+        if (isAtEnd()) return false;
+        if (source.charAt(current) != expected) return false;
+
+        current++;
+        return true;
     }
     private void addToken(TokenType type) {
         addToken(type, null);
