@@ -34,6 +34,7 @@ class Scanner {
     private int start = 0;
     private int current = 0;
     private int line = 1;
+    private boolean inComment = false;
 
     Scanner(String source) {
         this.source = source;
@@ -60,7 +61,17 @@ class Scanner {
             case ')' -> addToken(RIGHT_PAREN);
             case '+' -> addToken(PLUS);
             case '-' -> addToken(MINUS);
-            case '*' -> addToken(STAR);
+            case '*' -> {
+                if (match('/')) {
+                    // end multi-line comment
+                    inComment = false;
+                } else if (inComment) {
+                    while (peek() != '*' && !isAtEnd()) advance();
+                } else  {
+                    // for multiplication
+                    addToken(STAR);
+                }
+            }
             case ',' -> addToken(COMMA);
             case '.' -> addToken(DOT);
 
@@ -69,6 +80,9 @@ class Scanner {
                 if (match('/')) {
                     // BEFORE the newline char
                     while (peek() != '\n' && !isAtEnd()) advance();
+                } else if (match('*')) {
+                    inComment = true;
+                    while (peek() != '*' && !isAtEnd()) advance();
                 } else {
                     // for division
                     addToken(SLASH);
